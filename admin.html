@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>POS Dashboard — Delizio Momo</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* ===== POS DASHBOARD STYLES ===== */
+    body { background: #080808; }
+
+    .pos-wrapper {
+      padding-top: 70px;
+      min-height: 100vh;
+    }
+
+    /* Top bar */
+    .pos-topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      background: rgba(10,10,10,0.92);
+      backdrop-filter: blur(20px) saturate(1.6);
+      border-bottom: 1px solid var(--color-border);
+      padding: 0.8rem 0;
+    }
+    .pos-topbar .container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .pos-topbar-left {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+    .pos-topbar-left .nav-logo { font-size: 1.3rem; }
+    .pos-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.9rem;
+      border-radius: var(--radius-full);
+      background: rgba(34,197,94,0.1);
+      border: 1px solid rgba(34,197,94,0.2);
+      font-family: var(--font-ui);
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--color-green);
+    }
+    .pos-badge .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--color-green);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    .pos-topbar-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .pos-clock {
+      font-family: var(--font-ui);
+      font-size: 0.88rem;
+      color: var(--color-text-dim);
+      font-variant-numeric: tabular-nums;
+    }
+    .pos-sound-toggle {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.4rem 0.9rem;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--color-border);
+      font-family: var(--font-ui);
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--color-text-dim);
+      cursor: pointer;
+      transition: all var(--dur-fast) ease;
+    }
+    .pos-sound-toggle.on { border-color: var(--color-accent); color: var(--color-accent-2); }
+
+    /* Stats bar */
+    .pos-stats {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .pos-stat-card {
+      flex: 1;
+      padding: 1.25rem 1.5rem;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+    }
+    .pos-stat-card h4 {
+      font-family: var(--font-ui);
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--color-text-dim);
+      margin-bottom: 0.3rem;
+    }
+    .pos-stat-card .value {
+      font-family: var(--font-ui);
+      font-size: 1.8rem;
+      font-weight: 700;
+    }
+    .pos-stat-card .value.orange { color: var(--color-accent-2); }
+    .pos-stat-card .value.green { color: var(--color-green); }
+    .pos-stat-card .value.red { color: var(--color-red); }
+
+    /* Content */
+    .pos-content { padding: 1.5rem 0 3rem; }
+    .pos-section-title {
+      font-family: var(--font-ui);
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .pos-section-title .count {
+      background: var(--color-accent);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.15rem 0.6rem;
+      border-radius: var(--radius-full);
+    }
+
+    /* Order cards */
+    .pos-orders { display: flex; flex-direction: column; gap: 1rem; }
+
+    .pos-order-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      transition: all var(--dur-med) var(--ease-out);
+      animation: slideInOrder 0.5s var(--ease-out) both;
+    }
+    .pos-order-card.pending {
+      border-color: rgba(232,93,4,0.3);
+      box-shadow: 0 0 30px rgba(232,93,4,0.08);
+    }
+    .pos-order-card.accepted { border-color: rgba(34,197,94,0.3); }
+    .pos-order-card.rejected { border-color: rgba(220,38,38,0.2); opacity: 0.5; }
+
+    @keyframes slideInOrder {
+      from { opacity: 0; transform: translateY(-20px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .pos-order-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .pos-order-id {
+      font-family: var(--font-ui);
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .pos-order-meta {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .pos-order-type {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.25rem 0.7rem;
+      border-radius: var(--radius-full);
+      font-family: var(--font-ui);
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--color-border);
+    }
+    .pos-order-time {
+      font-family: var(--font-ui);
+      font-size: 0.78rem;
+      color: var(--color-text-dim);
+    }
+    .pos-order-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.25rem 0.7rem;
+      border-radius: var(--radius-full);
+      font-family: var(--font-ui);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .pos-order-status.s-pending { background: rgba(232,93,4,0.12); color: var(--color-accent-2); }
+    .pos-order-status.s-accepted { background: rgba(34,197,94,0.12); color: var(--color-green); }
+    .pos-order-status.s-rejected { background: rgba(220,38,38,0.12); color: var(--color-red); }
+
+    /* Order body */
+    .pos-order-customer {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--color-border);
+      flex-wrap: wrap;
+    }
+    .pos-order-customer-info span {
+      display: block;
+      font-family: var(--font-ui);
+    }
+    .pos-cust-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--color-text-dim);
+      margin-bottom: 0.15rem;
+    }
+    .pos-cust-val {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    .pos-order-items-list {
+      margin-bottom: 1rem;
+    }
+    .pos-order-items-list .item-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.4rem 0;
+      font-family: var(--font-ui);
+      font-size: 0.88rem;
+    }
+    .item-row .item-name {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .item-row .item-qty {
+      background: rgba(255,255,255,0.05);
+      padding: 0.1rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--color-text-dim);
+    }
+    .item-row .item-total {
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .pos-order-summary {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--color-border);
+    }
+    .pos-order-total {
+      font-family: var(--font-ui);
+    }
+    .pos-order-total small {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--color-text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .pos-order-total strong {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--color-accent-2);
+    }
+    .pos-order-total .breakdown {
+      font-size: 0.72rem;
+      color: var(--color-text-dim);
+    }
+    .pos-order-payment {
+      font-family: var(--font-ui);
+      font-size: 0.78rem;
+      color: var(--color-text-dim);
+      text-align: right;
+    }
+    .pos-order-payment strong { color: var(--color-text); }
+
+    /* Action buttons */
+    .pos-order-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.25rem;
+    }
+    .pos-btn {
+      flex: 1;
+      padding: 0.8rem;
+      border-radius: var(--radius-md);
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      transition: all var(--dur-med) var(--ease-out);
+    }
+    .pos-btn-accept {
+      background: rgba(34,197,94,0.12);
+      border: 1px solid rgba(34,197,94,0.3);
+      color: var(--color-green);
+    }
+    .pos-btn-accept:hover {
+      background: var(--color-green);
+      color: #fff;
+    }
+    .pos-btn-reject {
+      background: rgba(220,38,38,0.08);
+      border: 1px solid rgba(220,38,38,0.2);
+      color: var(--color-red);
+    }
+    .pos-btn-reject:hover {
+      background: var(--color-red);
+      color: #fff;
+    }
+
+    /* Empty state */
+    .pos-empty {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--color-text-dim);
+    }
+    .pos-empty .icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.3; }
+    .pos-empty h3 {
+      font-family: var(--font-ui);
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--color-text);
+    }
+    .pos-empty p { font-size: 0.9rem; }
+
+    /* Bell ring animation */
+    .bell-ring {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: all 0.3s ease;
+    }
+    .bell-ring.active { opacity: 1; visibility: visible; pointer-events: auto; }
+    .bell-ring-inner {
+      text-align: center;
+      animation: bellBounce 0.6s ease infinite alternate;
+    }
+    .bell-ring-icon {
+      font-size: 6rem;
+      display: block;
+      animation: bellShake 0.4s ease-in-out infinite;
+    }
+    .bell-ring-text {
+      font-family: var(--font-ui);
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-top: 1rem;
+      color: var(--color-accent-2);
+    }
+    .bell-ring-sub {
+      font-family: var(--font-ui);
+      font-size: 0.9rem;
+      color: var(--color-text-dim);
+      margin-top: 0.5rem;
+    }
+    .bell-ring-dismiss {
+      margin-top: 1.5rem;
+      padding: 0.7rem 2rem;
+      background: var(--color-accent);
+      color: #fff;
+      font-family: var(--font-ui);
+      font-weight: 700;
+      font-size: 0.9rem;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+      border: none;
+      transition: all var(--dur-med) var(--ease-out);
+    }
+    .bell-ring-dismiss:hover { background: var(--color-accent-2); }
+
+    @keyframes bellShake {
+      0%  { transform: rotate(0deg); }
+      25% { transform: rotate(15deg); }
+      50% { transform: rotate(0deg); }
+      75% { transform: rotate(-15deg); }
+      100%{ transform: rotate(0deg); }
+    }
+    @keyframes bellBounce {
+      from { transform: scale(1); }
+      to   { transform: scale(1.05); }
+    }
+
+    /* Pulsing border on new order */
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(232,93,4,0.15); }
+      50%      { box-shadow: 0 0 40px rgba(232,93,4,0.35); }
+    }
+    .pos-order-card.pending { animation: slideInOrder 0.5s var(--ease-out) both, pulseGlow 2s ease-in-out infinite; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .pos-stats { flex-wrap: wrap; }
+      .pos-stat-card { min-width: calc(50% - 0.5rem); }
+      .pos-order-customer { flex-direction: column; gap: 0.75rem; }
+    }
+
+    /* Print receipt iframe — hidden */
+    #printFrame {
+      position: fixed;
+      top: -9999px;
+      left: -9999px;
+      width: 0;
+      height: 0;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Bell Ring Overlay -->
+  <div class="bell-ring" id="bellOverlay">
+    <div class="bell-ring-inner">
+      <span class="bell-ring-icon">🔔</span>
+      <div class="bell-ring-text">New Order!</div>
+      <div class="bell-ring-sub">A customer just placed an order</div>
+      <button class="bell-ring-dismiss" onclick="dismissBell()">View Order</button>
+    </div>
+  </div>
+
+  <!-- Top bar -->
+  <div class="pos-topbar">
+    <div class="container">
+      <div class="pos-topbar-left">
+        <a href="index.html" class="nav-logo">Delizio</a>
+        <span class="pos-badge"><span class="dot"></span> POS Online</span>
+      </div>
+      <div class="pos-topbar-right">
+        <span class="pos-clock" id="clock">--:--:--</span>
+        <button class="pos-sound-toggle on" id="soundToggle" onclick="toggleSound()">
+          🔊 Sound On
+        </button>
+        <a href="order.html" class="btn btn-primary" style="font-size:.78rem;padding:.5rem 1.2rem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Open Order Page
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="pos-wrapper">
+    <div class="container">
+      <div class="pos-content">
+
+        <!-- Stats -->
+        <div class="pos-stats">
+          <div class="pos-stat-card">
+            <h4>Pending</h4>
+            <div class="value orange" id="statPending">0</div>
+          </div>
+          <div class="pos-stat-card">
+            <h4>Accepted</h4>
+            <div class="value green" id="statAccepted">0</div>
+          </div>
+          <div class="pos-stat-card">
+            <h4>Rejected</h4>
+            <div class="value red" id="statRejected">0</div>
+          </div>
+          <div class="pos-stat-card">
+            <h4>Revenue</h4>
+            <div class="value" id="statRevenue">₹0</div>
+          </div>
+        </div>
+
+        <!-- Orders -->
+        <div class="pos-section-title">
+          Incoming Orders <span class="count" id="orderCount">0</span>
+        </div>
+        <div class="pos-orders" id="ordersContainer">
+          <div class="pos-empty" id="emptyState">
+            <div class="icon">📋</div>
+            <h3>No orders yet</h3>
+            <p>Orders placed on the <a href="order.html" style="color:var(--color-accent-2)">ordering page</a> will appear here with a bell notification.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden print frame -->
+  <iframe id="printFrame"></iframe>
+
+<script>
+/* ===== POS DASHBOARD LOGIC ===== */
+
+const channel = new BroadcastChannel('delizio_orders');
+let orders = JSON.parse(localStorage.getItem('delizio_orders') || '[]');
+// Deduplicate orders by ID (keep first occurrence)
+orders = orders.filter((o, i, arr) => arr.findIndex(x => x.id === o.id) === i);
+localStorage.setItem('delizio_orders', JSON.stringify(orders));
+let soundOn = true;
+
+// Web Audio API bell sound
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playBell() {
+  if (!soundOn) return;
+  // Resume audio context (needed after user gesture)
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  // LOUD repeating alarm — rings until dismissed
+  alarmInterval = setInterval(() => {
+    playAlarmBurst();
+  }, 1800);
+  playAlarmBurst(); // play immediately
+}
+
+let alarmInterval = null;
+
+function stopAlarm() {
+  if (alarmInterval) {
+    clearInterval(alarmInterval);
+    alarmInterval = null;
+  }
+}
+
+function playAlarmBurst() {
+  if (!soundOn) return;
+  const now = audioCtx.currentTime;
+
+  // Ring pattern: rapid alternating tones like a real alarm
+  const pattern = [
+    // RING 1
+    { freq: 1800, start: 0,    dur: 0.12, vol: 1.0, type: 'square' },
+    { freq: 1400, start: 0.12, dur: 0.12, vol: 1.0, type: 'square' },
+    { freq: 1800, start: 0.24, dur: 0.12, vol: 1.0, type: 'square' },
+    { freq: 1400, start: 0.36, dur: 0.12, vol: 1.0, type: 'square' },
+    // RING 2 - higher
+    { freq: 2200, start: 0.55, dur: 0.1,  vol: 0.9, type: 'square' },
+    { freq: 1700, start: 0.65, dur: 0.1,  vol: 0.9, type: 'square' },
+    { freq: 2200, start: 0.75, dur: 0.1,  vol: 0.9, type: 'square' },
+    { freq: 1700, start: 0.85, dur: 0.1,  vol: 0.9, type: 'square' },
+    // RING 3 - urgent
+    { freq: 2500, start: 1.05, dur: 0.08, vol: 1.0, type: 'sawtooth' },
+    { freq: 1900, start: 1.13, dur: 0.08, vol: 1.0, type: 'sawtooth' },
+    { freq: 2500, start: 1.21, dur: 0.08, vol: 1.0, type: 'sawtooth' },
+    { freq: 1900, start: 1.29, dur: 0.08, vol: 1.0, type: 'sawtooth' },
+    { freq: 2500, start: 1.37, dur: 0.08, vol: 1.0, type: 'sawtooth' },
+    { freq: 1900, start: 1.45, dur: 0.08, vol: 1.0, type: 'sawtooth' },
+  ];
+
+  pattern.forEach(t => {
+    // Main oscillator
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = t.type;
+    osc.frequency.value = t.freq;
+    gain.gain.setValueAtTime(t.vol, now + t.start);
+    gain.gain.setValueAtTime(t.vol, now + t.start + t.dur * 0.7);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + t.start + t.dur);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(now + t.start);
+    osc.stop(now + t.start + t.dur + 0.01);
+
+    // Harmonic layer for extra loudness
+    const osc2 = audioCtx.createOscillator();
+    const gain2 = audioCtx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.value = t.freq * 0.5;
+    gain2.gain.setValueAtTime(t.vol * 0.6, now + t.start);
+    gain2.gain.exponentialRampToValueAtTime(0.01, now + t.start + t.dur);
+    osc2.connect(gain2);
+    gain2.connect(audioCtx.destination);
+    osc2.start(now + t.start);
+    osc2.stop(now + t.start + t.dur + 0.01);
+  });
+}
+
+function toggleSound() {
+  soundOn = !soundOn;
+  const btn = document.getElementById('soundToggle');
+  btn.textContent = soundOn ? '🔊 Sound On' : '🔇 Sound Off';
+  btn.classList.toggle('on', soundOn);
+  // Resume AudioContext on user gesture
+  if (soundOn && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+// Resume audio on ANY click (required by browser autoplay policy)
+document.addEventListener('click', () => {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+}, { once: true });
+
+// Clock
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('en-IN', { hour12: true });
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// Listen for new orders
+channel.addEventListener('message', e => {
+  if (e.data.type === 'NEW_ORDER') {
+    // Avoid duplicates
+    if (!orders.some(o => o.id === e.data.order.id)) {
+      orders.unshift(e.data.order);
+      localStorage.setItem('delizio_orders', JSON.stringify(orders));
+    }
+    playBell();
+    showBellOverlay();
+    renderOrders();
+  }
+});
+
+function showBellOverlay() {
+  document.getElementById('bellOverlay').classList.add('active');
+  // Auto-dismiss after 8s
+  setTimeout(dismissBell, 8000);
+}
+
+function dismissBell() {
+  document.getElementById('bellOverlay').classList.remove('active');
+  stopAlarm();
+}
+
+function acceptOrder(orderId) {
+  const idx = orders.findIndex(o => o.id === orderId && o.status === 'pending');
+  if (idx !== -1) {
+    orders[idx].status = 'accepted';
+    localStorage.setItem('delizio_orders', JSON.stringify(orders));
+    channel.postMessage({ type: 'ORDER_STATUS', orderId, status: 'accepted' });
+    renderOrders();
+    // Auto-print bill
+    printBill(orders[idx]);
+  }
+}
+
+function printBill(order) {
+  const time = new Date(order.time).toLocaleString('en-IN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: true
+  });
+  const payLabel = order.payment === 'cod' ? 'Cash' : 'Online';
+  const itemsHtml = order.items.map(i => `
+    <tr>
+      <td style="text-align:left">${i.diet==='veg'?'●':'●'} ${i.name}</td>
+      <td style="text-align:center">${i.qty}</td>
+      <td style="text-align:right">₹${i.price}</td>
+      <td style="text-align:right">₹${i.price * i.qty}</td>
+    </tr>
+  `).join('');
+
+  const billHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  @page { margin: 4mm; size: 80mm auto; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    color: #000;
+    width: 72mm;
+    margin: 0 auto;
+    padding: 2mm 0;
+  }
+  .center { text-align: center; }
+  .brand { font-size: 20px; font-weight: bold; letter-spacing: 2px; margin-bottom: 2px; }
+  .tagline { font-size: 9px; color: #555; margin-bottom: 6px; }
+  .divider { border-top: 1px dashed #000; margin: 6px 0; }
+  .info-row { display: flex; justify-content: space-between; font-size: 11px; margin: 2px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 4px 0; }
+  th { font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #000; padding: 3px 0; }
+  td { font-size: 11px; padding: 3px 0; vertical-align: top; }
+  .total-section { margin-top: 4px; }
+  .total-row { display: flex; justify-content: space-between; font-size: 11px; margin: 2px 0; }
+  .grand-total { font-size: 16px; font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px 0; margin: 4px 0; }
+  .footer { font-size: 10px; color: #555; margin-top: 8px; }
+  .footer-big { font-size: 12px; font-weight: bold; margin-top: 4px; }
+</style>
+</head>
+<body>
+  <div class="center">
+    <div class="brand">DELIZIO MOMO</div>
+    <div class="tagline">The Taste That Lasts Long 🔥</div>
+    <div style="font-size:10px">Phadke Road, Dombivli</div>
+    <div style="font-size:10px">Tel: +91 XXXXX XXXXX</div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="info-row"><span>Order #</span><span><b>${order.id}</b></span></div>
+  <div class="info-row"><span>Date</span><span>${time}</span></div>
+  <div class="info-row"><span>Type</span><span>🏪 Self Pickup</span></div>
+  <div class="info-row"><span>Payment</span><span>${payLabel}</span></div>
+
+  <div class="divider"></div>
+
+  <div class="info-row"><span>Customer</span><span><b>${order.customer.name}</b></span></div>
+  <div class="info-row"><span>Phone</span><span>${order.customer.phone}</span></div>
+  ${order.customer.notes ? '<div class="info-row"><span>Notes</span><span>' + order.customer.notes + '</span></div>' : ''}
+
+  <div class="divider"></div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="text-align:left">Item</th>
+        <th style="text-align:center">Qty</th>
+        <th style="text-align:right">Rate</th>
+        <th style="text-align:right">Amt</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${itemsHtml}
+    </tbody>
+  </table>
+
+  <div class="divider"></div>
+
+  <div class="total-section">
+    <div class="total-row"><span>Subtotal</span><span>₹${order.subtotal}</span></div>
+    <div class="total-row"><span>GST (5%)</span><span>₹${order.gst}</span></div>
+    <div class="total-row grand-total"><span>TOTAL</span><span>₹${order.total}</span></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="center footer">
+    <div class="footer-big">Thank You! Visit Again 🥟</div>
+    <div style="margin-top:4px">Follow us @deliziomomo</div>
+    <div style="margin-top:2px">www.deliziomomo.com</div>
+  </div>
+
+  <div style="margin-top:10px;text-align:center;font-size:9px;color:#999">
+    --- Powered by Delizio POS ---
+  </div>
+</body>
+</html>
+  `;
+
+  const frame = document.getElementById('printFrame');
+  const doc = frame.contentDocument || frame.contentWindow.document;
+  doc.open();
+  doc.write(billHtml);
+  doc.close();
+
+  // Wait for content to render, then print
+  setTimeout(() => {
+    frame.contentWindow.focus();
+    frame.contentWindow.print();
+  }, 300);
+}
+
+function rejectOrder(orderId) {
+  const idx = orders.findIndex(o => o.id === orderId && o.status === 'pending');
+  if (idx !== -1) {
+    orders[idx].status = 'rejected';
+    localStorage.setItem('delizio_orders', JSON.stringify(orders));
+    channel.postMessage({ type: 'ORDER_STATUS', orderId, status: 'rejected' });
+    renderOrders();
+  }
+}
+
+function renderOrders() {
+  const container = document.getElementById('ordersContainer');
+  const empty = document.getElementById('emptyState');
+
+  if (orders.length === 0) {
+    container.innerHTML = '';
+    container.appendChild(empty);
+    empty.style.display = '';
+  } else {
+    empty.style.display = 'none';
+    container.innerHTML = orders.map(o => {
+      const time = new Date(o.time).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+      const statusClass = o.status === 'pending' ? 's-pending' : o.status === 'accepted' ? 's-accepted' : 's-rejected';
+      const statusLabel = o.status.charAt(0).toUpperCase() + o.status.slice(1);
+      const payLabel = o.payment === 'cod' ? '💵 Cash on Delivery' : '💳 Online Payment';
+
+      return `
+        <div class="pos-order-card ${o.status}">
+          <div class="pos-order-header">
+            <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+              <span class="pos-order-id">#${o.id}</span>
+              <span class="pos-order-type">${o.orderType === 'delivery' ? '🚗 Delivery' : '🏪 Pickup'}</span>
+              <span class="pos-order-status ${statusClass}">● ${statusLabel}</span>
+            </div>
+            <span class="pos-order-time">🕐 ${time}</span>
+          </div>
+
+          <div class="pos-order-customer">
+            <div class="pos-order-customer-info">
+              <span class="pos-cust-label">Customer</span>
+              <span class="pos-cust-val">${o.customer.name}</span>
+            </div>
+            <div class="pos-order-customer-info">
+              <span class="pos-cust-label">Phone</span>
+              <span class="pos-cust-val">${o.customer.phone}</span>
+            </div>
+            ${o.orderType === 'delivery' && o.customer.address ? `
+            <div class="pos-order-customer-info" style="flex:1">
+              <span class="pos-cust-label">Address</span>
+              <span class="pos-cust-val">${o.customer.address}</span>
+            </div>` : ''}
+            ${o.customer.notes ? `
+            <div class="pos-order-customer-info">
+              <span class="pos-cust-label">Notes</span>
+              <span class="pos-cust-val" style="color:var(--color-accent-2)">${o.customer.notes}</span>
+            </div>` : ''}
+          </div>
+
+          <div class="pos-order-items-list">
+            ${o.items.map(i => `
+              <div class="item-row">
+                <div class="item-name">
+                  <span>${i.diet==='veg'?'🟢':'🔴'}</span>
+                  <span>${i.name}</span>
+                  <span class="item-qty">×${i.qty}</span>
+                </div>
+                <span class="item-total">₹${i.price * i.qty}</span>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="pos-order-summary">
+            <div class="pos-order-total">
+              <small>Order Total</small>
+              <strong>₹${o.total}</strong>
+              <div class="breakdown">Sub: ₹${o.subtotal} + GST: ₹${o.gst}${o.delivery ? ' + Del: ₹' + o.delivery : ''}</div>
+            </div>
+            <div class="pos-order-payment">
+              <span>${payLabel}</span>
+            </div>
+          </div>
+
+          ${o.status === 'pending' ? `
+          <div class="pos-order-actions">
+            <button class="pos-btn pos-btn-accept" data-action="accept" data-order-id="${o.id}">
+              ✓ Accept Order
+            </button>
+            <button class="pos-btn pos-btn-reject" data-action="reject" data-order-id="${o.id}">
+              ✕ Reject
+            </button>
+          </div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Update stats
+  const pending  = orders.filter(o => o.status === 'pending').length;
+  const accepted = orders.filter(o => o.status === 'accepted').length;
+  const rejected = orders.filter(o => o.status === 'rejected').length;
+  const revenue  = orders.filter(o => o.status === 'accepted').reduce((s,o) => s + o.total, 0);
+
+  document.getElementById('statPending').textContent = pending;
+  document.getElementById('statAccepted').textContent = accepted;
+  document.getElementById('statRejected').textContent = rejected;
+  document.getElementById('statRevenue').textContent = '₹' + revenue;
+  document.getElementById('orderCount').textContent = orders.length;
+}
+
+// Event delegation for accept/reject buttons
+document.getElementById('ordersContainer').addEventListener('click', function(e) {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const orderId = btn.dataset.orderId;
+  if (action === 'accept') acceptOrder(orderId);
+  if (action === 'reject') rejectOrder(orderId);
+});
+
+renderOrders();
+</script>
+</body>
+</html>
