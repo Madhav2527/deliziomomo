@@ -516,13 +516,12 @@
         <div class="pos-section-title">
           Incoming Orders <span class="count" id="orderCount">0</span>
         </div>
-        <div class="pos-orders" id="ordersContainer">
-          <div class="pos-empty" id="emptyState">
-            <div class="icon">📋</div>
-            <h3>No orders yet</h3>
-            <p>Orders placed on the <a href="order.html" style="color:var(--color-accent-2)">ordering page</a> will appear here with a bell notification.</p>
-          </div>
+        <div class="pos-empty" id="emptyState">
+          <div class="icon">📋</div>
+          <h3>No orders yet</h3>
+          <p>Orders placed on the <a href="order.html" style="color:var(--color-accent-2)">ordering page</a> will appear here with a bell notification.</p>
         </div>
+        <div class="pos-orders" id="ordersContainer"></div>
       </div>
     </div>
   </div>
@@ -815,7 +814,6 @@ function renderOrders() {
 
   if (orders.length === 0) {
     container.innerHTML = '';
-    container.appendChild(empty);
     empty.style.display = '';
   } else {
     empty.style.display = 'none';
