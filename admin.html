@@ -769,17 +769,19 @@ function printBill(order) {
 </html>
   `;
 
-  const frame = document.getElementById('printFrame');
-  const doc = frame.contentDocument || frame.contentWindow.document;
-  doc.open();
-  doc.write(billHtml);
-  doc.close();
-
-  // Wait for content to render, then print
+  // Since demo has no printer, download the receipt as an HTML file to show the client
+  const blob = new Blob([billHtml], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Receipt_${order.id}.html`;
+  document.body.appendChild(a);
+  a.click();
+  
   setTimeout(() => {
-    frame.contentWindow.focus();
-    frame.contentWindow.print();
-  }, 300);
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 100);
 }
 
 function rejectOrder(orderId) {
