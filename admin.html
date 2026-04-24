@@ -438,9 +438,25 @@
       #printableArea, #printableArea * { visibility: visible; }
       #printableArea { display: block; position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
     }
+
+    /* Start overlay for audio gesture */
+    #startOverlay {
+      position: fixed; inset: 0; z-index: 10000;
+      background: rgba(10,10,10,0.95); backdrop-filter: blur(10px);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: #fff; cursor: pointer; transition: opacity 0.3s ease;
+    }
+    #startOverlay h2 { font-family: var(--font-ui); font-size: 2rem; margin-bottom: 0.5rem; color: var(--color-accent-2); }
+    #startOverlay p { font-family: var(--font-ui); font-size: 1rem; color: var(--color-text-dim); }
   </style>
 </head>
 <body>
+
+  <!-- Audio unlock overlay -->
+  <div id="startOverlay" onclick="unlockAudio()">
+    <h2>▶ Start POS Session</h2>
+    <p>Click anywhere to enable real-time order alerts</p>
+  </div>
 
   <!-- Bell Ring Overlay -->
   <div class="bell-ring" id="bellOverlay">
@@ -518,15 +534,29 @@
 <script>
 /* ===== POS DASHBOARD LOGIC ===== */
 
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function unlockAudio() {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  // Play a silent tone to force unlock on Safari/iOS
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  gain.gain.value = 0;
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.start(0);
+  osc.stop(0.1);
+  
+  document.getElementById('startOverlay').style.opacity = '0';
+  setTimeout(() => document.getElementById('startOverlay').style.display = 'none', 300);
+}
+
 const channel = new BroadcastChannel('delizio_orders');
 let orders = JSON.parse(localStorage.getItem('delizio_orders') || '[]');
 // Deduplicate orders by ID (keep first occurrence)
 orders = orders.filter((o, i, arr) => arr.findIndex(x => x.id === o.id) === i);
 localStorage.setItem('delizio_orders', JSON.stringify(orders));
 let soundOn = true;
-
-// Web Audio API bell sound
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 function playBell() {
   if (!soundOn) return;
@@ -612,11 +642,6 @@ function toggleSound() {
     audioCtx.resume();
   }
 }
-
-// Resume audio on ANY click (required by browser autoplay policy)
-document.addEventListener('click', () => {
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-}, { once: true });
 
 // Clock
 function updateClock() {
@@ -775,10 +800,12 @@ function printBill(order) {
   const printArea = document.getElementById('printableArea');
   printArea.innerHTML = billHtml;
 
-  // Trigger print dialog natively
-  setTimeout(() => {
-    window.print();
-  }, 100);
+  // Let the UI fully paint the "Accepted" status first, then print
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      window.print();
+    }, 400); // Wait 400ms to ensure DOM updates are visible
+  });
 }
 
 
