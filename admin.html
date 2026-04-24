@@ -431,12 +431,15 @@
       .pos-order-customer { flex-direction: column; gap: 0.75rem; }
     }
 
-    #printableArea { display: none; }
-
-    @media print {
-      body * { visibility: hidden; }
-      #printableArea, #printableArea * { visibility: visible; }
-      #printableArea { display: block; position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
+    /* Print receipt iframe — hidden */
+    #printFrame {
+      position: absolute;
+      top: -9999px;
+      left: -9999px;
+      width: 0;
+      height: 0;
+      border: none;
+      visibility: hidden;
     }
 
     /* Start overlay for audio gesture */
@@ -528,7 +531,8 @@
 
   </div>
 
-  <div id="printableArea"></div>
+  <!-- Hidden print frame -->
+  <iframe id="printFrame"></iframe>
 
 <script>
 /* ===== POS DASHBOARD LOGIC ===== */
@@ -794,15 +798,21 @@ function printBill(order) {
   <div style="margin-top:10px;text-align:center;font-size:9px;color:#999">
     --- Powered by Delizio POS ---
   </div>
+</body>
+</html>
   `;
 
-  const printArea = document.getElementById('printableArea');
-  printArea.innerHTML = billHtml;
+  const frame = document.getElementById('printFrame');
+  const doc = frame.contentDocument || frame.contentWindow.document;
+  doc.open();
+  doc.write(billHtml);
+  doc.close();
 
   // Let the UI fully paint the "Accepted" status first, then print
   requestAnimationFrame(() => {
     setTimeout(() => {
-      window.print();
+      frame.contentWindow.focus();
+      frame.contentWindow.print();
     }, 400); // Wait 400ms to ensure DOM updates are visible
   });
 }
