@@ -431,14 +431,12 @@
       .pos-order-customer { flex-direction: column; gap: 0.75rem; }
     }
 
-    /* Print receipt iframe — hidden */
-    #printFrame {
-      position: fixed;
-      top: -9999px;
-      left: -9999px;
-      width: 0;
-      height: 0;
-      border: none;
+    #printableArea { display: none; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printableArea, #printableArea * { visibility: visible; }
+      #printableArea { display: block; position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
     }
   </style>
 </head>
@@ -513,8 +511,9 @@
     </div>
   </div>
 
-  <!-- Hidden print frame -->
-  <iframe id="printFrame"></iframe>
+  </div>
+
+  <div id="printableArea"></div>
 
 <script>
 /* ===== POS DASHBOARD LOGIC ===== */
@@ -641,6 +640,23 @@ channel.addEventListener('message', e => {
   }
 });
 
+// Fallback for file:// URLs where BroadcastChannel might be blocked
+window.addEventListener('storage', e => {
+  if (e.key === 'delizio_orders') {
+    const newOrders = JSON.parse(e.newValue || '[]');
+    if (newOrders.length > orders.length) {
+      // It's a new order!
+      orders = newOrders;
+      playBell();
+      showBellOverlay();
+      renderOrders();
+    } else {
+      orders = newOrders;
+      renderOrders();
+    }
+  }
+});
+
 function showBellOverlay() {
   document.getElementById('bellOverlay').classList.add('active');
   // Auto-dismiss after 8s
@@ -754,21 +770,15 @@ function printBill(order) {
   <div style="margin-top:10px;text-align:center;font-size:9px;color:#999">
     --- Powered by Delizio POS ---
   </div>
-</body>
-</html>
   `;
 
-  const frame = document.getElementById('printFrame');
-  const doc = frame.contentDocument || frame.contentWindow.document;
-  doc.open();
-  doc.write(billHtml);
-  doc.close();
+  const printArea = document.getElementById('printableArea');
+  printArea.innerHTML = billHtml;
 
-  // Wait for content to render, then print
+  // Trigger print dialog natively
   setTimeout(() => {
-    frame.contentWindow.focus();
-    frame.contentWindow.print();
-  }, 300);
+    window.print();
+  }, 100);
 }
 
 
