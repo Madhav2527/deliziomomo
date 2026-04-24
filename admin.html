@@ -652,17 +652,6 @@ function dismissBell() {
   stopAlarm();
 }
 
-function acceptOrder(orderId) {
-  const idx = orders.findIndex(o => o.id === orderId && o.status === 'pending');
-  if (idx !== -1) {
-    orders[idx].status = 'accepted';
-    localStorage.setItem('delizio_orders', JSON.stringify(orders));
-    channel.postMessage({ type: 'ORDER_STATUS', orderId, status: 'accepted' });
-    renderOrders();
-    // Auto-print bill
-    printBill(orders[idx]);
-  }
-}
 
 function printBill(order) {
   const time = new Date(order.time).toLocaleString('en-IN', {
@@ -782,15 +771,6 @@ function printBill(order) {
   }, 300);
 }
 
-function rejectOrder(orderId) {
-  const idx = orders.findIndex(o => o.id === orderId && o.status === 'pending');
-  if (idx !== -1) {
-    orders[idx].status = 'rejected';
-    localStorage.setItem('delizio_orders', JSON.stringify(orders));
-    channel.postMessage({ type: 'ORDER_STATUS', orderId, status: 'rejected' });
-    renderOrders();
-  }
-}
 
 function renderOrders() {
   const container = document.getElementById('ordersContainer');
@@ -866,10 +846,10 @@ function renderOrders() {
 
           ${o.status === 'pending' ? `
           <div class="pos-order-actions">
-            <button class="pos-btn pos-btn-accept" data-action="accept" data-order-id="${o.id}">
+            <button class="pos-btn pos-btn-accept" onclick="acceptOrder('${o.id}')">
               ✓ Accept Order
             </button>
-            <button class="pos-btn pos-btn-reject" data-action="reject" data-order-id="${o.id}">
+            <button class="pos-btn pos-btn-reject" onclick="rejectOrder('${o.id}')">
               ✕ Reject
             </button>
           </div>` : ''}
@@ -891,15 +871,34 @@ function renderOrders() {
   document.getElementById('orderCount').textContent = orders.length;
 }
 
-// Event delegation for accept/reject buttons
-document.getElementById('ordersContainer').addEventListener('click', function(e) {
-  const btn = e.target.closest('[data-action]');
-  if (!btn) return;
-  const action = btn.dataset.action;
-  const orderId = btn.dataset.orderId;
-  if (action === 'accept') acceptOrder(orderId);
-  if (action === 'reject') rejectOrder(orderId);
-});
+function acceptOrder(orderId) {
+  try {
+    const idx = orders.findIndex(o => o.id === orderId && o.status === 'pending');
+    if (idx !== -1) {
+      orders[idx].status = 'accepted';
+      localStorage.setItem('delizio_orders', JSON.stringify(orders));
+      channel.postMessage({ type: 'ORDER_STATUS', orderId, status: 'accepted' });
+      renderOrders();
+      printBill(orders[idx]);
+    }
+  } catch (err) {
+    alert("Error accepting order: " + err.message);
+  }
+}
+
+function rejectOrder(orderId) {
+  try {
+    const idx = orders.findIndex(o => o.id === orderId && o.status === 'pending');
+    if (idx !== -1) {
+      orders[idx].status = 'rejected';
+      localStorage.setItem('delizio_orders', JSON.stringify(orders));
+      channel.postMessage({ type: 'ORDER_STATUS', orderId, status: 'rejected' });
+      renderOrders();
+    }
+  } catch (err) {
+    alert("Error rejecting order: " + err.message);
+  }
+}
 
 renderOrders();
 </script>
