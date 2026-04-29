@@ -53,6 +53,20 @@
       <img src="assets/images/hero-momos.png" alt="Delizio Momo steamed momos on slate plate" />
     </div>
     <div class="hero-glow"></div>
+    
+    <!-- 3D Glass Logo Background -->
+    <div class="hero-logo-wrap" id="heroLogoWrap">
+      <div class="hero-logo-scene">
+        <div class="hero-logo-orb" id="heroLogoOrb">
+          <img src="assets/images/logo-3d.png" alt="Delizio Momo Logo" class="hero-logo-img" />
+          <!-- Glass shine overlay -->
+          <div class="logo-glass-shine"></div>
+          <!-- Ambient ring glow -->
+          <div class="logo-ring-1"></div>
+          <div class="logo-ring-2"></div>
+        </div>
+      </div>
+    </div>
     <div class="container">
       <div class="hero-content">
         <div class="hero-badge">
@@ -91,6 +105,8 @@
         </div>
       </div>
     </div>
+
+
     <div class="scroll-indicator">
       <div class="scroll-mouse"></div>
       <span>Scroll</span>
@@ -611,6 +627,23 @@
   }, { threshold: 0.5 });
   const statsSection = document.querySelector('.hero-stats');
   if (statsSection) statsObs.observe(statsSection);
+
+  // --- 3D Logo Tilt Effect ---
+  const logoWrap = document.getElementById('heroLogoWrap');
+  const logoOrb  = document.getElementById('heroLogoOrb');
+  if (logoWrap && logoOrb) {
+    logoWrap.addEventListener('mousemove', (e) => {
+      const rect = logoWrap.getBoundingClientRect();
+      const cx   = rect.left + rect.width  / 2;
+      const cy   = rect.top  + rect.height / 2;
+      const dx   = (e.clientX - cx) / (rect.width  / 2);
+      const dy   = (e.clientY - cy) / (rect.height / 2);
+      logoOrb.style.transform = `rotateY(${dx * 18}deg) rotateX(${-dy * 18}deg) scale(1.04)`;
+    });
+    logoWrap.addEventListener('mouseleave', () => {
+      logoOrb.style.transform = 'rotateY(0deg) rotateX(0deg) scale(1)';
+    });
+  }
 
   </script>
 </body>
